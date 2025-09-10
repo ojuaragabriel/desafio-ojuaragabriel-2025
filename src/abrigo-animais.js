@@ -7,7 +7,7 @@ class AbrigoAnimais {
       Zero: { tipo: 'gato',  fav: ['RATO', 'BOLA'] },
       Bola: { tipo: 'cão',   fav: ['CAIXA', 'NOVELO'] },
       Bebe: { tipo: 'cão',   fav: ['LASER', 'RATO', 'BOLA'] },
-      Loco: { tipo: 'jabuti', fav: ['SKATE', 'RATO'], especial: true }
+      Loco: { tipo: 'jabuti', fav: ['SKATE', 'RATO'], especial: true } // ordem não importa + precisa de companhia
     };
     this.brinquedosValidos = ['RATO','BOLA','LASER','CAIXA','NOVELO','SKATE'];
   }
@@ -15,31 +15,17 @@ class AbrigoAnimais {
   _csv(texto) { if (!texto || String(texto).trim() === '') return []; return String(texto).split(',').map(p => p.trim()); }
   _csvUpper(texto) { return this._csv(texto).map(p => p.toUpperCase()); }
   _temDuplicado(lista) { const v = {}; for (const x of lista) { if (v[x]) return true; v[x] = true; } return false; }
-
-  _ehSubsequencia(fav, seq) {
-    let j = 0;
-    for (let i = 0; i < seq.length && j < fav.length; i++) {
-      if (seq[i] === fav[j]) j++;
-    }
-    return j === fav.length;
-  }
-
-  // todos de fav devem existir em seq (ordem não importa)
-  _temTodos(fav, seq) {
-    const set = {};
-    for (const t of seq) set[t] = true;
-    for (const f of fav) if (!set[f]) return false;
-    return true;
-  }
-
+  _ehSubsequencia(fav, seq) { let j = 0; for (let i = 0; i < seq.length && j < fav.length; i++) if (seq[i] === fav[j]) j++; return j === fav.length; }
+  _temTodos(fav, seq) { const s = {}; for (const t of seq) s[t] = true; for (const f of fav) if (!s[f]) return false; return true; }
   _pessoaPodeLevar(animal, brinquedosPessoa, totalAnimais, totalGatos) {
-    if (totalAnimais >= 3) return false;                 // max 3
-    if (animal.tipo === 'gato' && totalGatos >= 1) return false; // max 1 gato
-    if (animal.especial) return this._temTodos(animal.fav, brinquedosPessoa); 
-    return this._ehSubsequencia(animal.fav, brinquedosPessoa);               
+    if (totalAnimais >= 3) return false;
+    if (animal.tipo === 'gato' && totalGatos >= 1) return false;
+    if (animal.especial) return this._temTodos(animal.fav, brinquedosPessoa);
+    return this._ehSubsequencia(animal.fav, brinquedosPessoa);
   }
 
   encontraPessoas(brinquedosPessoa1, brinquedosPessoa2, ordemAnimais) {
+    // Validações
     const p1 = this._csvUpper(brinquedosPessoa1);
     const p2 = this._csvUpper(brinquedosPessoa2);
     if (p1.some(t => !this.brinquedosValidos.includes(t)) ||
@@ -56,9 +42,9 @@ class AbrigoAnimais {
     }
     if (this._temDuplicado(ordem)) return { erro: 'Animal inválido' };
 
-    // alocação principal
+    // Alocação
     let total1 = 0, total2 = 0, gatos1 = 0, gatos2 = 0;
-    let locoDono = null; // guardo pra usar depois
+    let locoDono = null;
     const destino = {};
 
     for (const nome of ordem) {
@@ -78,6 +64,10 @@ class AbrigoAnimais {
         destino[nome] = 'abrigo';
       }
     }
+
+    // se ficar sozinho na casa, volta pro abrigo
+    if (locoDono === 'p1' && total1 === 1) destino['Loco'] = 'abrigo';
+    if (locoDono === 'p2' && total2 === 1) destino['Loco'] = 'abrigo';
 
     const nomesOrdenados = Object.keys(destino).sort((a, b) => (a > b ? 1 : a < b ? -1 : 0));
     const lista = nomesOrdenados.map(n => `${n} - ${destino[n]}`);
